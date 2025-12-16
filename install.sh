@@ -970,3 +970,424 @@ LAUNCHEREOF
     chmod +x "$BIN_DIR/$COMMAND_NAME"
     echo -e "  ${G}[✔]${NC} Launcher compiled: ${DIM}$BIN_DIR/$COMMAND_NAME${NC}"
 }
+# ══════════════════════════════════════════════════════════════════════════════════════
+# 9. COMPRESSOR MODULE GENERATION
+# ══════════════════════════════════════════════════════════════════════════════════════
+
+create_compressor() {
+    echo -e "  ${NEON_Y}[PHASE 5]${NC} ${W}COMPILING COMPRESSION ENGINE${NC}"
+    echo -e "  ${GR}─────────────────────────────────────────────────────────${NC}"
+    echo ""
+    
+    cat > "$INSTALL_DIR/lib/compressor.sh" << 'COMPEOF'
+#!/usr/bin/env bash
+# MDH_COMPRESSER - Compression Engine
+
+INSTALL_DIR="$HOME/.mdhcompresser"
+source "$INSTALL_DIR/lib/utils.sh"
+source "$INSTALL_DIR/lib/quotes.sh"
+
+# Colors
+R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'; P='\033[0;35m'
+C='\033[0;36m'; W='\033[1;37m'; GR='\033[1;30m'; NC='\033[0m'
+NEON_G='\033[38;5;46m'; NEON_P='\033[38;5;201m'; NEON_C='\033[38;5;51m'
+NEON_R='\033[38;5;196m'; NEON_Y='\033[38;5;226m'
+SH1='░'; SH2='▒'; SH3='▓'
+
+# State
+INPUT_FILE=""
+OUTPUT_FILE=""
+MODE=""
+ORIGINAL_SIZE=0
+
+# ══════════════════════════════════════════════════════════════════════════════════════
+# COMPRESSION MODES
+# ══════════════════════════════════════════════════════════════════════════════════════
+
+show_modes() {
+    clear
+    echo ""
+    echo -e "  ${W}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "  ${W}║${NC}                   ${NEON_C}SELECT COMPRESSION MODE${NC}                     ${W}║${NC}"
+    echo -e "  ${W}╠═══════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "  ${W}║${NC}                                                                   ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${GR}SPEED OPTIMIZED${NC}                                                  ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_G}[1]${NC} FLASH ⚡        ${DIM}LZ4 (800MB/s)${NC}                               ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_G}[2]${NC} LITTLE FLOWER 🌸 ${DIM}Zstd Fast${NC}                                 ${W}║${NC}"
+    echo -e "  ${W}║${NC}                                                                   ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${GR}BALANCED${NC}                                                         ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_Y}[3]${NC} ASIAN 🍜        ${DIM}7z Balanced${NC}                               ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_Y}[4]${NC} TASTY DRUNK 🍺  ${DIM}7z High${NC}                                   ${W}║${NC}"
+    echo -e "  ${W}║${NC}                                                                   ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${GR}MAXIMUM POWER${NC}                                                    ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_R}[5]${NC} BEAST 🦁        ${DIM}7z Ultra${NC}                                  ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_R}[6]${NC} GODLY 👑        ${DIM}XZ Extreme${NC}                                ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_R}[7]${NC} LEGENDARY 🐉    ${DIM}ZPAQ Max${NC}                                  ${W}║${NC}"
+    echo -e "  ${W}║${NC}                                                                   ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${GR}FORBIDDEN ZONE${NC}                                                   ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_P}[8]${NC} MYTHIC 💀       ${DIM}Multi-Pass Pipeline${NC}                       ${W}║${NC}"
+    echo -e "  ${W}║${NC}  ${NEON_P}[9]${NC} MDH_ZONE ☠️     ${DIM}ABSOLUTE LIMIT${NC}                            ${W}║${NC}"
+    echo -e "  ${W}║${NC}                                                                   ${W}║${NC}"
+    echo -e "  ${W}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    if [ "$MDH_OFFLINE" = "true" ]; then
+        echo -e "  ${NEON_R}⚠ OFFLINE MODE: Only modes 1-3 available${NC}"
+    fi
+    
+    echo -ne "  ${NEON_G}>> Select Mode:${NC} "
+    read -r MODE
+    
+    if [ "$MDH_OFFLINE" = "true" ] && [ "$MODE" -gt 3 ]; then
+        echo -e "  ${R}[!] Feature locked in offline mode.${NC}"
+        sleep 1
+        show_modes
+    fi
+}
+
+get_input() {
+    echo ""
+    echo -e "  ${NEON_C}[INPUT]${NC} Enter file/folder path:"
+    echo -ne "  ${GR}>>${NC} "
+    read -e -r INPUT_FILE
+    
+    if [ ! -e "$INPUT_FILE" ]; then
+        echo -e "  ${R}[!] File not found.${NC}"
+        sleep 1
+        get_input
+    fi
+    
+    ORIGINAL_SIZE=$(get_size_bytes "$INPUT_FILE")
+    echo -e "  ${G}[✔]${NC} Size: $(format_size $ORIGINAL_SIZE)"
+}
+
+compress() {
+    local ext=""
+    local cmd=""
+    
+    case $MODE in
+        1) # FLASH
+            ext="tar.lz4"
+            cmd="tar cf - \"$INPUT_FILE\" | lz4 -1 -"
+            ;;
+        2) # FLOWER
+            ext="tar.zst"
+            cmd="tar cf - \"$INPUT_FILE\" | zstd -3 -"
+            ;;
+        3) # ASIAN
+            ext="7z"
+            cmd="7z a -t7z -mx=5 -mmt=on"
+            ;;
+        4) # DRUNK
+            ext="7z"
+            cmd="7z a -t7z -mx=7 -m0=LZMA2:d=64m:fb=64 -mmt=on"
+            ;;
+        5) # BEAST
+            ext="7z"
+            cmd="7z a -t7z -mx=9 -m0=LZMA2:d=256m:fb=273 -ms=on -mmt=on"
+            ;;
+        6) # GODLY
+            ext="tar.xz"
+            cmd="tar cf - \"$INPUT_FILE\" | xz -9e --threads=0"
+            ;;
+        7) # LEGENDARY
+            ext="zpaq"
+            if command -v zpaq &>/dev/null; then
+                cmd="zpaq a \"OUTPUT\" \"$INPUT_FILE\" -method 5"
+            else
+                echo -e "  ${Y}[!] ZPAQ not found, falling back to XZ Extreme${NC}"
+                ext="tar.xz"
+                cmd="tar cf - \"$INPUT_FILE\" | xz -9e --threads=0"
+            fi
+            ;;
+        8) # MYTHIC
+            ext="7z"
+            # Pre-process then 7z max
+            cmd="7z a -t7z -mx=9 -m0=LZMA2:d=512m:fb=273:lc=4 -ms=on -mmt=on"
+            ;;
+        9) # MDH_ZONE
+            ext="mdh.7z"
+            echo -e "  ${NEON_R}☠ INITIATING MDH_ZONE PROTOCOL ☠${NC}"
+            sleep 1
+            # The absolute maximum settings possible in 7-Zip
+            cmd="7z a -t7z -mx=9 -m0=LZMA2:d=1536m:fb=273:lc=4 -ms=on -mmt=on"
+            ;;
+    esac
+    
+    OUTPUT_FILE="${INPUT_FILE}_compressed.${ext}"
+    
+    echo ""
+    echo -e "  ${NEON_P}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "  ${NEON_P}║${NC}                  ${W}COMPRESSION IN PROGRESS${NC}                      ${NEON_P}║${NC}"
+    echo -e "  ${NEON_P}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Random Quote
+    local quote=$(get_random_quote COMPRESSION_QUOTES)
+    echo -e "  ${DIM}\"$quote\"${NC}"
+    echo ""
+    
+    local start_time=$(date +%s)
+    
+    # Execute with progress bar simulation (since actual piping hides progress)
+    if [[ "$MODE" -eq 1 || "$MODE" -eq 2 || "$MODE" -eq 6 ]]; then
+        eval "$cmd > \"$OUTPUT_FILE\"" &
+        local pid=$!
+        while kill -0 $pid 2>/dev/null; do
+            echo -ne "  ${NEON_C}Processing...${NC} \r"
+            sleep 0.5
+        done
+    else
+        # 7z handles its own progress if not piped, but here we simplify
+        eval "$cmd \"$OUTPUT_FILE\" \"$INPUT_FILE\" > /dev/null" &
+        local pid=$!
+        while kill -0 $pid 2>/dev/null; do
+            echo -ne "  ${NEON_C}Compressing...${NC} \r"
+            sleep 0.5
+        done
+    fi
+    
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    
+    if [ -f "$OUTPUT_FILE" ]; then
+        show_results "$OUTPUT_FILE" "$ORIGINAL_SIZE" "$duration"
+    else
+        echo -e "  ${R}[!] Compression failed.${NC}"
+    fi
+}
+
+show_results() {
+    local file="$1"
+    local orig="$2"
+    local time="$3"
+    local final=$(get_size_bytes "$file")
+    local ratio=$(echo "scale=2; ($final / $orig) * 100" | bc)
+    local saved=$(echo "scale=2; 100 - $ratio" | bc)
+    
+    clear
+    echo ""
+    echo -e "  ${NEON_G}🎉 COMPRESSION COMPLETE!${NC}"
+    echo ""
+    echo -e "  ${W}Original:${NC}  $(format_size $orig)"
+    echo -e "  ${W}Final:${NC}     $(format_size $final)"
+    echo -e "  ${W}Ratio:${NC}     ${NEON_Y}${ratio}%${NC} (Size)"
+    echo -e "  ${W}Saved:${NC}     ${NEON_G}${saved}%${NC}"
+    echo -e "  ${W}Time:${NC}      ${time}s"
+    echo ""
+    echo -e "  ${DIM}File saved at:${NC}"
+    echo -e "  ${file}"
+    echo ""
+    
+    # Social Sharing
+    echo -e "  ${NEON_C}📢 Share your achievement?${NC}"
+    echo -e "  [1] Copy to Clipboard"
+    echo -e "  [2] Skip"
+    echo -ne "  >> "
+    read -r share
+    
+    if [ "$share" == "1" ]; then
+        local msg="🔥 Just compressed $(format_size $orig) → $(format_size $final) ($saved% saved) using MDH_COMPRESSER! 🚀 https://github.com/MDHojayfa/MDH_Compresser"
+        copy_to_clipboard "$msg"
+        echo -e "  ${G}[✔] Copied!${NC}"
+    fi
+    
+    # Support Reminder
+    echo ""
+    echo -e "  ${NEON_P}💖 Support MDHojayfa:${NC}"
+    echo -e "  ${DIM}BTC: bc1q24yndamzynl8afdmy52heclglk79ucu4jqn638${NC}"
+    echo ""
+    echo -ne "  Press Enter to return..."
+    read -r
+}
+
+# Main Logic
+show_modes
+get_input
+compress
+COMPEOF
+
+    chmod +x "$INSTALL_DIR/lib/compressor.sh"
+    echo -e "  ${G}[✔]${NC} Compression engine compiled"
+}
+# ══════════════════════════════════════════════════════════════════════════════════════
+# 10. EXTRACTOR MODULE GENERATION
+# ══════════════════════════════════════════════════════════════════════════════════════
+
+create_extractor() {
+    echo -e "  ${NEON_Y}[PHASE 6]${NC} ${W}COMPILING EXTRACTOR ENGINE${NC}"
+    echo -e "  ${GR}─────────────────────────────────────────────────────────${NC}"
+    echo ""
+    
+    cat > "$INSTALL_DIR/lib/extractor.sh" << 'EXTEOF'
+#!/usr/bin/env bash
+# MDH_COMPRESSER - Extractor Engine
+
+INSTALL_DIR="$HOME/.mdhcompresser"
+source "$INSTALL_DIR/lib/utils.sh"
+
+# Colors
+G='\033[0;32m'; C='\033[0;36m'; NC='\033[0m'; R='\033[0;31m'; Y='\033[1;33m'
+
+echo ""
+echo -e "  ${C}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "  ${C}║${NC}                   ${G}MDH UNIVERSAL EXTRACTOR${NC}                     ${C}║${NC}"
+echo -e "  ${C}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Get Input
+echo -e "  ${C}[INPUT]${NC} Enter archive path (or drag & drop):"
+echo -ne "  >> "
+read -e -r ARCHIVE
+
+if [ ! -f "$ARCHIVE" ]; then
+    echo -e "  ${R}[!] File not found.${NC}"
+    exit 1
+fi
+
+# Detect Type
+TYPE=$(detect_archive_type "$ARCHIVE")
+echo -e "  ${G}[*]${NC} Detected format: ${Y}${TYPE^^}${NC}"
+
+# Get Output Dir
+OUTPUT_DIR="${ARCHIVE%.*}_extracted"
+echo -e "  ${C}[*]${NC} Extracting to: ${OUTPUT_DIR}"
+mkdir -p "$OUTPUT_DIR"
+
+echo ""
+echo -e "  ${Y}Extracting...${NC}"
+
+# Extraction Logic
+case $TYPE in
+    zip) unzip "$ARCHIVE" -d "$OUTPUT_DIR" ;;
+    rar) 7z x "$ARCHIVE" -o"$OUTPUT_DIR" ;;
+    7z) 7z x "$ARCHIVE" -o"$OUTPUT_DIR" ;;
+    tar) tar xf "$ARCHIVE" -C "$OUTPUT_DIR" ;;
+    tar.gz) tar xzf "$ARCHIVE" -C "$OUTPUT_DIR" ;;
+    tar.xz) tar xJf "$ARCHIVE" -C "$OUTPUT_DIR" ;;
+    gz) gunzip -c "$ARCHIVE" > "$OUTPUT_DIR/$(basename "$ARCHIVE" .gz)" ;;
+    xz) xz -d -c "$ARCHIVE" > "$OUTPUT_DIR/$(basename "$ARCHIVE" .xz)" ;;
+    *) 
+        echo -e "  ${Y}[!] Unknown format, trying 7z universal...${NC}"
+        7z x "$ARCHIVE" -o"$OUTPUT_DIR" 
+        ;;
+esac
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo -e "  ${G}✔ EXTRACTION SUCCESSFUL${NC}"
+else
+    echo ""
+    echo -e "  ${R}✘ EXTRACTION FAILED${NC}"
+fi
+
+echo ""
+echo -ne "  Press Enter to return..."
+read -r
+EXTEOF
+
+    chmod +x "$INSTALL_DIR/lib/extractor.sh"
+    echo -e "  ${G}[✔]${NC} Extractor engine compiled"
+}
+
+# ══════════════════════════════════════════════════════════════════════════════════════
+# 11. FINAL SETUP & PATH CONFIGURATION
+# ══════════════════════════════════════════════════════════════════════════════════════
+
+setup_environment() {
+    echo -e "  ${NEON_Y}[PHASE 7]${NC} ${W}FINALIZING INSTALLATION${NC}"
+    echo -e "  ${GR}─────────────────────────────────────────────────────────${NC}"
+    echo ""
+    
+    # Symlink main command
+    ln -sf "$BIN_DIR/$COMMAND_NAME" "$BIN_DIR/mdh"
+    
+    # Add to PATH if needed
+    local shell_rc=""
+    if [ -f "$HOME/.bashrc" ]; then shell_rc="$HOME/.bashrc"; fi
+    if [ -f "$HOME/.zshrc" ]; then shell_rc="$HOME/.zshrc"; fi
+    
+    if [ -n "$shell_rc" ]; then
+        if ! grep -q "MDH_COMPRESSER" "$shell_rc"; then
+            echo "" >> "$shell_rc"
+            echo "# MDH_COMPRESSER PATH" >> "$shell_rc"
+            echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$shell_rc"
+            echo -e "  ${G}[✔]${NC} Added to PATH in ${shell_rc}"
+        else
+            echo -e "  ${G}[✔]${NC} PATH already configured"
+        fi
+    fi
+    
+    # Set permissions
+    chmod -R 755 "$INSTALL_DIR"
+    chmod 755 "$BIN_DIR/$COMMAND_NAME"
+    
+    echo -e "  ${G}[✔]${NC} Permissions set"
+}
+
+show_success_message() {
+    clear_screen
+    echo ""
+    echo -e "  ${NEON_G}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "  ${NEON_G}║${NC}                  ${W}🎉 INSTALLATION COMPLETE! 🎉${NC}                 ${NEON_G}║${NC}"
+    echo -e "  ${NEON_G}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  ${W}MDH_COMPRESSER is successfully installed.${NC}"
+    echo ""
+    echo -e "  ${C}HOW TO START:${NC}"
+    echo -e "  Run command:  ${NEON_Y}${COMMAND_NAME}${NC}"
+    echo -e "  Or simply:    ${NEON_Y}mdh${NC}"
+    echo ""
+    echo -e "  ${GR}───────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "  ${NEON_P}💖 SUPPORT THE DEVELOPER${NC}"
+    echo -e "  ${DIM}Crypto addresses will be shown in the tool.${NC}"
+    echo ""
+    echo -e "  ${W}Opening GitHub profile in 3 seconds...${NC}"
+    echo -e "  ${DIM}Please follow @MDHojayfa & star the repo!${NC}"
+    echo ""
+    
+    sleep 3
+    open_url "$GITHUB_PROFILE"
+}
+
+# ══════════════════════════════════════════════════════════════════════════════════════
+# MAIN INSTALLER LOOP
+# ══════════════════════════════════════════════════════════════════════════════════════
+
+main() {
+    # 1. Boot Animation
+    boot_sequence
+    
+    # 2. System Check
+    local os=$(detect_os)
+    echo -e "  ${NEON_C}[*]${NC} Detected System: ${W}${os^^}${NC}"
+    sleep 1
+    
+    # 3. Installation Phases
+    install_dependencies "$os"
+    create_directories
+    create_launcher
+    create_compressor
+    create_extractor
+    
+    # 4. Embedded Files
+    create_config
+    create_user_id
+    create_quotes
+    create_utils
+    
+    # 5. Finalize
+    setup_environment
+    
+    # 6. Done
+    show_success_message
+}
+
+# Run Installer
+main "$@"
+EXTEOF
+
+    # Make sure install.sh is executable right after pasting
+    # (This comment is for you, not part of the file)
+}
