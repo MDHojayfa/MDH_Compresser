@@ -145,7 +145,7 @@ mdhcompresser
 ### Mode Details
 
 <details>
-<summary><b>⚡ Mode 1: FLASH</b> — Instant Speed</summary>
+<summary><b>⚡ Mode 1: FLASH</b> — Insame Speed</summary>
 
 ```
 Algorithm: LZ4 -1
