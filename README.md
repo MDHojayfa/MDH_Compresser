@@ -71,6 +71,14 @@ cd MDH_Compresser
 chmod +x install.sh
 ./install.sh
 ```
+## 📦 Video Guide
+
+<div align="center">
+
+[![CLICK FOR INSTALL GUIDE](https://img.shields.io/badge/📼_Installation_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/lLSv0xcPSpo)  
+*Get unstuck in minutes!*
+
+</div>
 
 ### Run the Tool
 
