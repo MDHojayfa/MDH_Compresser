@@ -75,7 +75,7 @@ chmod +x install.sh
 
 <div align="center">
 
-[![CLICK FOR INSTALL GUIDE](https://img.shields.io/badge/📼_Installation_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/lLSv0xcPSpo)  
+[![CLICK FOR INSTALL GUIDE](https://img.shields.io/badge/📼_Installation_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/HSn2OdqW_cg)  
 *Get unstuck in minutes!*
 
 </div>
