@@ -22,7 +22,7 @@
 <br/>
 
 <!-- SHIELDS -->
-[![Version](https://img.shields.io/badge/Version-7.0_ULTIMATE-00ff00?style=for-the-badge&logo=hackthebox&logoColor=white&labelColor=0d1117)](https://github.com/MDHojayfa/MDH_Compresser)
+[![Version](https://img.shields.io/badge/Version-7.0_ULTIMATE_CHAOS-00ff00?style=for-the-badge&logo=hackthebox&logoColor=white&labelColor=0d1117)](https://github.com/MDHojayfa/MDH_Compresser)
 [![License](https://img.shields.io/badge/License-MIT-bf00ff?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=0d1117)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux_|_Termux_|_macOS_|_WSL-00ffff?style=for-the-badge&logo=linux&logoColor=white&labelColor=0d1117)](https://github.com/MDHojayfa/MDH_Compresser)
 [![Stars](https://img.shields.io/github/stars/MDHojayfa/MDH_Compresser?style=for-the-badge&logo=github&logoColor=white&color=ffdd00&labelColor=0d1117)](https://github.com/MDHojayfa/MDH_Compresser/stargazers)
